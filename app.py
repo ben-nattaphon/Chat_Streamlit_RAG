@@ -47,15 +47,15 @@ model = genai.GenerativeModel('gemini-2.0-flash-lite')
 # response = model.generate_content("Who is Mild Charinrat")
 # to_markdown(response.text)
 
-transaction_df = pd.read_csv('/content/transactions.csv')
-example_record = transaction_df.head(2).to_string()
-data_dict_df = pd.read_csv('/content/data_dict.csv')
-data_dict_text = '\n'.join('- '+ data_dict_df['column_name']+
+##transaction_df = pd.read_csv('/content/transactions.csv')
+##example_record = transaction_df.head(2).to_string()
+##data_dict_df = pd.read_csv('/content/data_dict.csv')
+##data_dict_text = '\n'.join('- '+ data_dict_df['column_name']+
                   ': '+data_dict_df['data_type']+
                   '. '+data_dict_df['description'])
-df_name = 'transaction_df'
+##df_name = 'transaction_df'
 
-print(data_dict_text)
+##print(data_dict_text)
 
 question = 'How many total sale in jan 2025?'
 
