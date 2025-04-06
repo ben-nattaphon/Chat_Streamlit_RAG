@@ -135,7 +135,8 @@ def generate_code(question, context, model="gemini-2.0-flash-lite"):
 # Function to execute generated code and get results
 # Function to execute generated code and get results
 def execute_code_and_get_result(code, df):
-    # Create a namespace for execution
+    # ... (โค้ดส่วนต้นคงเดิม) ...
+    
     try:
         # Execute the code
         exec(code, namespace)
@@ -157,49 +158,7 @@ def execute_code_and_get_result(code, df):
         
         return {"success": True, "result": result, "code": code, "explanation": explanation}
     except Exception as e:
-        
-        # Remove markdown code blocks if present
-        if clean_code.startswith("```python"):
-            clean_code = clean_code.split("```python", 1)[1]
-        if clean_code.endswith("```"):
-            clean_code = clean_code.rsplit("```", 1)[0]
-            
-        # Remove any code = """ pattern which causes issues
-        if 'code = """' in clean_code:
-            # Extract the actual code inside the triple quotes
-            code_lines = clean_code.split('code = """', 1)[1].split('"""', 1)[0].strip().splitlines()
-            # Keep only the lines that should be executed (ignore the ANSWER line if present)
-            actual_code = []
-            for line in code_lines:
-                if line.strip() and not line.strip().startswith('"""'):
-                    actual_code.append(line)
-            clean_code = "\n".join(actual_code)
-        
-        # Fix the common exec pattern issue
-        if 'exec(code)' in clean_code:
-            lines = clean_code.splitlines()
-            actual_code = []
-            for i, line in enumerate(lines):
-                if line.strip().startswith('ANSWER ='):
-                    actual_code.append(line)
-                elif 'exec(code)' in line:
-                    # Skip this line
-                    pass
-                elif not (line.strip().startswith('code =') or line.strip() == '"""' or line.strip() == "'''"):
-                    actual_code.append(line)
-            clean_code = "\n".join(actual_code)
-        
-        # Execute the cleaned code
-        exec(clean_code, namespace)
-        
-        # Get the result
-        result = namespace.get("ANSWER", "No result was stored in the ANSWER variable")
-        return {"success": True, "result": result, "code": clean_code}
-    except Exception as e:
-        # For more detailed error debugging
-        import traceback
-        error_details = traceback.format_exc()
-        return {"success": False, "error": str(e), "code": code, "error_details": error_details}
+        # ... (โค้ดการจัดการข้อผิดพลาดคงเดิม) ...
 
 # Function to answer question with RAG
 def answer_question_with_rag(question, execution_result, context, model="gemini-2.0-flash-lite"):
@@ -212,32 +171,57 @@ def answer_question_with_rag(question, execution_result, context, model="gemini-
     else:
         result_str = str(execution_result["result"])
     
-    # Create the RAG prompt
-    rag_prompt = f"""
-    You are a helpful assistant specialized in analyzing liquor sales data. Answer the following question based on the data execution results provided.
-    
-    **User Question:** {question}
-    
-    **Data Execution Results:** 
-    {result_str}
-    
-    **DataFrame Details:** 
-    {context['data_dict']}
-    
-    **DataFrame Summary:**
-    {context['summary_stats']}
-    
-    Please provide a clear, concise answer to the user's question based on the data results. 
-    If the results are unclear or if there's an issue with the data, explain what might be going wrong.
-    Use bullet points where appropriate to make the information more readable.
-    """
-    
+    # Try the new approach with enhanced explanation and summary
     try:
-        model = genai.GenerativeModel(model)
-        response = model.generate_content(rag_prompt)
+        # First, create a detailed explanation of the results
+        explain_the_results = f'''
+        The user asked: "{question}"
+        
+        Here are the results: {result_str}
+        
+        DataFrame Details: 
+        {context['data_dict']}
+        
+        DataFrame Summary:
+        {context['summary_stats']}
+        
+        Please provide a detailed answer to the user's question based on these results. Your response should:
+        1. Directly answer the question
+        2. Explain key insights from the data
+        3. Provide context about why these results matter
+        4. Summarize the findings in a business-friendly way
+        5. Add any interesting patterns or anomalies you notice
+        6. Include your analysis of what this might tell us about customer preferences or market trends
+        
+        Make your response conversational and insightful, as if you're a data analyst explaining findings to a colleague.
+        '''
+        
+        # Generate the enhanced explanation
+        model_instance = genai.GenerativeModel(model)
+        response = model_instance.generate_content(explain_the_results)
+        
         return response.text.strip()
     except Exception as e:
-        return f"Error generating answer: {str(e)}"
+        # Fallback to a simpler approach if the enhanced explanation fails
+        try:
+            # Create a more basic RAG prompt
+            rag_prompt = f"""
+            You are a helpful assistant specialized in analyzing liquor sales data. Answer the following question based on the data execution results provided.
+            
+            **User Question:** {question}
+            
+            **Data Execution Results:** 
+            {result_str}
+            
+            Please provide a clear, concise answer to the user's question based on the data results.
+            Summarize the key points and insights.
+            """
+            
+            model_instance = genai.GenerativeModel(model)
+            response = model_instance.generate_content(rag_prompt)
+            return response.text.strip()
+        except Exception as inner_e:
+            return f"Error generating answer: {str(e)}. I tried a simpler approach but encountered: {str(inner_e)}. Here's the raw data:\n{result_str[:500]}..."
 
 # Main app function
 def main():
