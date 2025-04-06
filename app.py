@@ -17,7 +17,7 @@ st.set_page_config(
 
 # Configure Gemini API using the API key from Streamlit secrets
 def configure_genai():
-    gemini_api_key = secrets.get("gemini_api_key", "")
+    api_key = secrets.get("gemini_api_key", "")
     if not gemini_api_key:
         st.error("Google API Key not found in Streamlit secrets. Please add it to your secrets.toml file.")
         st.stop()
