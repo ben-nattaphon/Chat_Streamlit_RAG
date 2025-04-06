@@ -1,4 +1,3 @@
-!pip install -q -U google-generativeai
 import pathlib
 import textwrap
 import google.generativeai as genai
