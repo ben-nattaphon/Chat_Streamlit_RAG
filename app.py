@@ -8,6 +8,21 @@ import textwrap
 from typing import List, Dict, Any
 from streamlit import secrets
 
+def generate_code(question, context, model="gemini-2.0-flash-lite"):
+    # ... (โค้ดส่วนต้นคงเดิม) ...
+    
+    try:
+        model_instance = genai.GenerativeModel(model)
+        response = model_instance.generate_content(prompt)
+        
+        # ใช้วิธีของคุณ - แทนที่ ``` ด้วย # เพื่อความปลอดภัย
+        query = response.text.replace("```", "#")
+        return query
+        
+    except Exception as e:
+        return f"Error generating code: {str(e)}"
+
+
 # Set page configuration
 st.set_page_config(
     page_title="Liquor Sales Chatbot",
@@ -121,11 +136,27 @@ def generate_code(question, context, model="gemini-2.0-flash-lite"):
 # Function to execute generated code and get results
 def execute_code_and_get_result(code, df):
     # Create a namespace for execution
-    namespace = {"df": df, "pd": pd, "ANSWER": None}
-    
     try:
-        # Clean the code first
-        clean_code = code.strip()
+        # Execute the code
+        exec(code, namespace)
+        
+        # Get the result
+        result = namespace.get("ANSWER", "No result was stored in the ANSWER variable")
+        
+        # Create enhanced explanation
+        explain_the_results = f'''
+        the user asked {question},
+        here is the results {result}
+        answer the question and summarize the answer,
+        include your opinions of the persona of this customer
+        '''
+        
+        model_instance = genai.GenerativeModel("gemini-2.0-flash-lite")
+        explanation_response = model_instance.generate_content(explain_the_results)
+        explanation = explanation_response.text
+        
+        return {"success": True, "result": result, "code": code, "explanation": explanation}
+    except Exception as e:
         
         # Remove markdown code blocks if present
         if clean_code.startswith("```python"):
