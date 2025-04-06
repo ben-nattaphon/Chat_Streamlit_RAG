@@ -16,9 +16,36 @@ st.set_page_config(
 )
 
 # Configure Gemini API using the API key from Streamlit secrets
-api_key = st.secrets['gemini_api_key']
 def configure_genai():
-    genai.configure(api_key='gemini_api_key')
+    try:
+        # Try to access the API key from secrets
+        api_key = secrets.get("gemini_API_KEY", "")
+        
+        # Debug information
+        if not api_key:
+            st.error("Google API Key not found in Streamlit secrets. Please add it to your secrets.toml file.")
+            st.stop()
+        elif len(api_key) < 10:  # Simple check if key looks too short
+            st.warning(f"API key looks suspicious (length: {len(api_key)}). Please verify it's correct.")
+            
+        # Debug message showing the first few and last few characters of the API key
+        masked_key = api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:] if len(api_key) > 8 else "Invalid key format"
+        st.info(f"Using API key: {masked_key} (Length: {len(api_key)})")
+        
+        # Configure the API
+        genai.configure(api_key=api_key)
+        
+        # Test the API with a simple call
+        models = genai.list_models()
+        model_names = [model.name for model in models]
+        st.success(f"API connection successful! Available models: {', '.join(model_names)}")
+    except Exception as e:
+        st.error(f"Error configuring API: {str(e)}")
+        st.info("Please make sure you have:")
+        st.info("1. Created a valid Google AI Studio API key")
+        st.info("2. Added the key to your .streamlit/secrets.toml file as GOOGLE_API_KEY = 'your-key-here'")
+        st.info("3. Enabled the Gemini API for your Google Cloud project")
+        st.stop()
 
 # Load and prepare data
 @st.cache_data
