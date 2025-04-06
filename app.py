@@ -2,8 +2,8 @@ import pathlib
 import textwrap
 import google.generativeai as genai
 import pandas as pd
-from IPython.display import display
-from IPython.display import Markdown
+###from IPython.display import display
+###from IPython.display import Markdown
 def to_markdown(text):
   text = text.replace('•', ' *')
   return Markdown(textwrap.indent(text, '> ', predicate=lambda
