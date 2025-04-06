@@ -14,7 +14,7 @@ st.set_page_config(
     page_icon="🍹",
     layout="wide"
 )
-
+genai.configure(api_key='YOUR_GEMINI_API_KEY')
 # Configure Gemini API using the API key from Streamlit secrets
 def configure_genai():
     api_key = secrets.get("GOOGLE_API_KEY", "")
