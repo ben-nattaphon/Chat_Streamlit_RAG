@@ -19,7 +19,7 @@ st.set_page_config(
 def configure_genai():
     try:
         # Try to access the API key from secrets
-        gemini_api_key = secrets.get("gemini_api_key", "")
+        api_key = secrets.get("gemini_api_key", "")
         
         # Debug information
         if not api_key:
@@ -29,7 +29,7 @@ def configure_genai():
             st.warning(f"API key looks suspicious (length: {len(api_key)}). Please verify it's correct.")
             
         # Debug message showing the first few and last few characters of the API key
-        masked_key = gemini_api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:] if len(api_key) > 8 else "Invalid key format"
+        masked_key = api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:] if len(api_key) > 8 else "Invalid key format"
         st.info(f"Using API key: {masked_key} (Length: {len(api_key)})")
         
         # Configure the API
@@ -97,9 +97,27 @@ def create_context(df, data_dict):
         "summary_stats": summary_text
     }
 
+# Function to test if the Gemini API is working
+def test_gemini_api():
+    try:
+        # Try with a simpler model first for testing
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content("Hello, can you respond with just the word 'working' if you can see this?")
+        if "working" in response.text.lower():
+            return True, "API is working correctly."
+        else:
+            return False, f"API responded but with unexpected content: {response.text[:100]}"
+    except Exception as e:
+        return False, f"API test failed: {str(e)}"
+
 # Function to generate code from question
-def generate_code(question, context, model="gemini-1.5-pro"):
+def generate_code(question, context, model="gemini-1.5-flash"):
     df_name = "df"
+    
+    # Test if the API is working first
+    api_working, message = test_gemini_api()
+    if not api_working:
+        return f"Error: Unable to use Gemini API. {message}"
     
     # Create the prompt for the code generation
     prompt = f"""
@@ -135,6 +153,7 @@ def generate_code(question, context, model="gemini-1.5-pro"):
     """
     
     try:
+        # Use a more lightweight model if available
         model = genai.GenerativeModel(model)
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -157,13 +176,18 @@ def execute_code_and_get_result(code, df):
         return {"success": False, "error": str(e), "code": code}
 
 # Function to answer question with RAG
-def answer_question_with_rag(question, execution_result, context, model="gemini-1.5-flash-lite"):
+def answer_question_with_rag(question, execution_result, context, model="gemini-1.5-flash"):
     if not execution_result["success"]:
         return f"Error executing code: {execution_result['error']}"
     
     # Format the execution result
     if isinstance(execution_result["result"], pd.DataFrame):
-        result_str = execution_result["result"].to_string()
+        # Limit large dataframes to a reasonable size for the prompt
+        df_result = execution_result["result"]
+        if len(df_result) > 20:
+            result_str = df_result.head(20).to_string() + f"\n... and {len(df_result) - 20} more rows"
+        else:
+            result_str = df_result.to_string()
     else:
         result_str = str(execution_result["result"])
     
@@ -188,11 +212,17 @@ def answer_question_with_rag(question, execution_result, context, model="gemini-
     """
     
     try:
+        # Test if API is working first
+        api_working, message = test_gemini_api()
+        if not api_working:
+            return f"Error: Unable to use Gemini API for generating the answer. {message}\n\nRaw data result:\n{result_str[:500]}..."
+        
+        # Use a more lightweight model
         model = genai.GenerativeModel(model)
         response = model.generate_content(rag_prompt)
         return response.text.strip()
     except Exception as e:
-        return f"Error generating answer: {str(e)}"
+        return f"Error generating answer: {str(e)}\n\nHere's the raw data result instead:\n{result_str[:500]}..."
 
 # Main app function
 def main():
@@ -208,6 +238,19 @@ def main():
         
         st.divider()
         
+        # Option to manually enter API key if there are issues with secrets
+        with st.expander("⚙️ API Configuration (Optional)"):
+            st.write("If you're experiencing API issues, you can manually enter your API key here:")
+            manual_api_key = st.text_input("Google API Key (Optional)", type="password")
+            if manual_api_key and st.button("Use this API key"):
+                try:
+                    genai.configure(api_key=manual_api_key)
+                    st.success("Manual API key configured successfully!")
+                except Exception as e:
+                    st.error(f"Error with manual API key: {str(e)}")
+        
+        st.divider()
+        
         st.header("Sample Questions")
         st.write("""
         ### Try asking:
@@ -218,9 +261,24 @@ def main():
         - Which city has the most diverse selection of liquor categories?
         """)
     
-    # Configure the Gemini API with the API key from secrets
+    # Configure the Gemini API with the API key from secrets or environment variables
     try:
-        configure_genai()
+        # First try to use secrets
+        try:
+            configure_genai()
+        except Exception as e:
+            # If secrets fail, try environment variables
+            st.warning(f"Could not configure API with secrets: {str(e)}")
+            st.info("Trying environment variables...")
+            
+            if 'GOOGLE_API_KEY' in os.environ:
+                api_key = os.environ.get('GOOGLE_API_KEY')
+                st.info("Found API key in environment variables")
+                genai.configure(api_key=api_key)
+                st.success("API configured using environment variable!")
+            else:
+                st.error("No API key found in environment variables either.")
+                st.info("Please use the API Configuration section in the sidebar to enter your API key manually.")
     except Exception as e:
         st.error(f"Error configuring API: {str(e)}")
         return
