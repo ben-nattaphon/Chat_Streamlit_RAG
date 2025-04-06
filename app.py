@@ -19,7 +19,7 @@ st.set_page_config(
 def configure_genai():
     try:
         # Try to access the API key from secrets
-        api_key = secrets.get("gemini_API_KEY", "")
+        gemini_api_key = secrets.get("gemini_api_key", "")
         
         # Debug information
         if not api_key:
@@ -29,7 +29,7 @@ def configure_genai():
             st.warning(f"API key looks suspicious (length: {len(api_key)}). Please verify it's correct.")
             
         # Debug message showing the first few and last few characters of the API key
-        masked_key = api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:] if len(api_key) > 8 else "Invalid key format"
+        masked_key = gemini_api_key[:4] + "*" * (len(api_key) - 8) + api_key[-4:] if len(api_key) > 8 else "Invalid key format"
         st.info(f"Using API key: {masked_key} (Length: {len(api_key)})")
         
         # Configure the API
