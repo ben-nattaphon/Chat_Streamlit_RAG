@@ -321,15 +321,7 @@ def main():
         st.divider()
         
         # Option to manually enter API key if there are issues with secrets
-        with st.expander("⚙️ API Configuration (Optional)"):
-            st.write("If you're experiencing API issues, you can manually enter your API key here:")
-            manual_api_key = st.text_input("Google API Key (Optional)", type="password")
-            if manual_api_key and st.button("Use this API key"):
-                try:
-                    genai.configure(api_key=manual_api_key)
-                    st.success("Manual API key configured successfully!")
-                except Exception as e:
-                    st.error(f"Error with manual API key: {str(e)}")
+        
         
         st.divider()
         
