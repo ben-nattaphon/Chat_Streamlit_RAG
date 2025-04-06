@@ -51,8 +51,8 @@ model = genai.GenerativeModel('gemini-2.0-flash-lite')
 ##example_record = transaction_df.head(2).to_string()
 ##data_dict_df = pd.read_csv('/content/data_dict.csv')
 ##data_dict_text = '\n'.join('- '+ data_dict_df['column_name']+
-                  ': '+data_dict_df['data_type']+
-                  '. '+data_dict_df['description'])
+##                  ': '+data_dict_df['data_type']+
+##                  '. '+data_dict_df['description'])
 ##df_name = 'transaction_df'
 
 ##print(data_dict_text)
