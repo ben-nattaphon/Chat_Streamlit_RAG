@@ -1,0 +1,12 @@
+column_name,data_type,description
+invoice_and_item_number,STRING,Concatenated invoice and line number associated with the liquor order. This provides a unique identifier for the individual liquor products included in the store order.
+date,DATE,Date of order
+store_name,STRING,Name of store who ordered the liquor.
+city,STRING,City where the store who ordered the liquor is located
+county,STRING,County where the store who ordered the liquor is located
+category_name,STRING,Category of the liquor ordered.
+vendor_name,STRING,The vendor name of the company for the brand of liquor ordered
+item_description,STRING,Description of the individual liquor product ordered.
+state_bottle_retail,FLOAT64,The amount the store paid for each bottle of liquor ordered
+bottles_sold,INT64,The number of bottles of liquor ordered by the store
+sale_dollars,FLOAT64,Total cost of liquor order (number of bottles multiplied by the state bottle retail)
