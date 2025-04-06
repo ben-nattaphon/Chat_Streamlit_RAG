@@ -1,4 +1,31 @@
-tetime(df['date'])
+import streamlit as st
+import pandas as pd
+import google.generativeai as genai
+import os
+from datetime import datetime
+import io
+import textwrap
+from typing import List, Dict, Any
+
+# Set page configuration
+st.set_page_config(
+    page_title="Liquor Sales Chatbot",
+    page_icon="🍹",
+    layout="wide"
+)
+
+# Configure Gemini API (you'll need to provide your API key)
+def configure_genai(api_key):
+    genai.configure(api_key=api_key)
+
+# Load and prepare data
+@st.cache_data
+def load_data():
+    # Load the transactions data
+    df = pd.read_csv("transactions.csv")
+    
+    # Convert date column to datetime
+    df['date'] = pd.to_datetime(df['date'])
     
     # Convert numeric columns to appropriate types
     df['state_bottle_retail'] = pd.to_numeric(df['state_bottle_retail'])
@@ -42,7 +69,7 @@ def create_context(df, data_dict):
     }
 
 # Function to generate code from question
-def generate_code(question, context, model="gemini-1.5-pro"):
+def generate_code(question, context, model="gemini-2.0-flash-lite"):
     df_name = "df"
     
     # Create the prompt for the code generation
@@ -101,7 +128,7 @@ def execute_code_and_get_result(code, df):
         return {"success": False, "error": str(e), "code": code}
 
 # Function to answer question with RAG
-def answer_question_with_rag(question, execution_result, context, model="gemini-1.5-flash-lite"):
+def answer_question_with_rag(question, execution_result, context, model="gemini-2.0-flash-lite"):
     if not execution_result["success"]:
         return f"Error executing code: {execution_result['error']}"
     
