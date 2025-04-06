@@ -74,7 +74,7 @@ def create_context(df, data_dict):
     }
 
 # Function to generate code from question
-def generate_code(question, context, model="gemini-1.5-pro"):
+def generate_code(question, context, model="gemini-2.0-flash-lite"):
     df_name = "df"
     
     # Create the prompt for the code generation
@@ -133,7 +133,7 @@ def execute_code_and_get_result(code, df):
         return {"success": False, "error": str(e), "code": code}
 
 # Function to answer question with RAG
-def answer_question_with_rag(question, execution_result, context, model="gemini-1.5-flash-lite"):
+def answer_question_with_rag(question, execution_result, context, model="gemini-2.0-flash-lite"):
     if not execution_result["success"]:
         return f"Error executing code: {execution_result['error']}"
     
