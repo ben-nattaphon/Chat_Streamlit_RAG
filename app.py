@@ -118,19 +118,57 @@ def generate_code(question, context, model="gemini-2.0-flash-lite"):
         return f"Error generating code: {str(e)}"
 
 # Function to execute generated code and get results
+# Function to execute generated code and get results
 def execute_code_and_get_result(code, df):
     # Create a namespace for execution
     namespace = {"df": df, "pd": pd, "ANSWER": None}
     
     try:
-        # Execute the code
-        exec(code, namespace)
+        # Clean the code first
+        clean_code = code.strip()
+        
+        # Remove markdown code blocks if present
+        if clean_code.startswith("```python"):
+            clean_code = clean_code.split("```python", 1)[1]
+        if clean_code.endswith("```"):
+            clean_code = clean_code.rsplit("```", 1)[0]
+            
+        # Remove any code = """ pattern which causes issues
+        if 'code = """' in clean_code:
+            # Extract the actual code inside the triple quotes
+            code_lines = clean_code.split('code = """', 1)[1].split('"""', 1)[0].strip().splitlines()
+            # Keep only the lines that should be executed (ignore the ANSWER line if present)
+            actual_code = []
+            for line in code_lines:
+                if line.strip() and not line.strip().startswith('"""'):
+                    actual_code.append(line)
+            clean_code = "\n".join(actual_code)
+        
+        # Fix the common exec pattern issue
+        if 'exec(code)' in clean_code:
+            lines = clean_code.splitlines()
+            actual_code = []
+            for i, line in enumerate(lines):
+                if line.strip().startswith('ANSWER ='):
+                    actual_code.append(line)
+                elif 'exec(code)' in line:
+                    # Skip this line
+                    pass
+                elif not (line.strip().startswith('code =') or line.strip() == '"""' or line.strip() == "'''"):
+                    actual_code.append(line)
+            clean_code = "\n".join(actual_code)
+        
+        # Execute the cleaned code
+        exec(clean_code, namespace)
         
         # Get the result
         result = namespace.get("ANSWER", "No result was stored in the ANSWER variable")
-        return {"success": True, "result": result, "code": code}
+        return {"success": True, "result": result, "code": clean_code}
     except Exception as e:
-        return {"success": False, "error": str(e), "code": code}
+        # For more detailed error debugging
+        import traceback
+        error_details = traceback.format_exc()
+        return {"success": False, "error": str(e), "code": code, "error_details": error_details}
 
 # Function to answer question with RAG
 def answer_question_with_rag(question, execution_result, context, model="gemini-2.0-flash-lite"):
