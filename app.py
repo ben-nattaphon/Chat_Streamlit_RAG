@@ -1,3 +1,5 @@
+import streamlit as st
+import google.generativeai as genai
 import pathlib
 import textwrap
 import google.generativeai as genai
