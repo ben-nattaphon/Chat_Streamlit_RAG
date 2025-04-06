@@ -6,6 +6,7 @@ from datetime import datetime
 import io
 import textwrap
 from typing import List, Dict, Any
+from streamlit import secrets
 
 # Set page configuration
 st.set_page_config(
@@ -14,8 +15,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Configure Gemini API (you'll need to provide your API key)
-def configure_genai(api_key):
+# Configure Gemini API using the API key from Streamlit secrets
+def configure_genai():
+    api_key = secrets.get("GOOGLE_API_KEY", "")
+    if not api_key:
+        st.error("Google API Key not found in Streamlit secrets. Please add it to your secrets.toml file.")
+        st.stop()
     genai.configure(api_key=api_key)
 
 # Load and prepare data
@@ -69,7 +74,7 @@ def create_context(df, data_dict):
     }
 
 # Function to generate code from question
-def generate_code(question, context, model="gemini-2.0-flash-lite"):
+def generate_code(question, context, model="gemini-1.5-pro"):
     df_name = "df"
     
     # Create the prompt for the code generation
@@ -128,7 +133,7 @@ def execute_code_and_get_result(code, df):
         return {"success": False, "error": str(e), "code": code}
 
 # Function to answer question with RAG
-def answer_question_with_rag(question, execution_result, context, model="gemini-2.0-flash-lite"):
+def answer_question_with_rag(question, execution_result, context, model="gemini-1.5-flash-lite"):
     if not execution_result["success"]:
         return f"Error executing code: {execution_result['error']}"
     
@@ -169,19 +174,8 @@ def answer_question_with_rag(question, execution_result, context, model="gemini-
 def main():
     st.title("🍹 Liquor Sales Data Analysis Chatbot")
     
-    # Sidebar for configuration
+    # Sidebar for information
     with st.sidebar:
-        st.header("Configuration")
-        api_key = st.text_input("Enter your Google API Key:", type="password")
-        
-        if api_key:
-            configure_genai(api_key)
-            st.success("API key configured successfully!")
-        else:
-            st.warning("Please enter your Google API key to continue")
-        
-        st.divider()
-        
         st.header("About")
         st.write("""
         This chatbot uses Google's Gemini model to analyze liquor sales data.
@@ -190,19 +184,21 @@ def main():
         
         st.divider()
         
-        if st.button("Show Sample Questions"):
-            st.write("""
-            ### Sample Questions:
-            - What are the top 5 selling liquor categories by total sales?
-            - Which store had the highest sales in February 2025?
-            - What's the average number of bottles sold per transaction?
-            - Show me sales trends by date for CANADIAN WHISKIES
-            - Which city has the most diverse selection of liquor categories?
-            """)
+        st.header("Sample Questions")
+        st.write("""
+        ### Try asking:
+        - What are the top 5 selling liquor categories by total sales?
+        - Which store had the highest sales in February 2025?
+        - What's the average number of bottles sold per transaction?
+        - Show me sales trends by date for CANADIAN WHISKIES
+        - Which city has the most diverse selection of liquor categories?
+        """)
     
-    # Check if API key is provided
-    if not api_key:
-        st.info("Please enter your Google API key in the sidebar to get started")
+    # Configure the Gemini API with the API key from secrets
+    try:
+        configure_genai()
+    except Exception as e:
+        st.error(f"Error configuring API: {str(e)}")
         return
     
     # Load data
