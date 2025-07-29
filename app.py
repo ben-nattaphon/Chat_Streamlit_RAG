@@ -194,7 +194,7 @@ def answer_question_with_rag(question, execution_result, context, model="gemini-
     # Create the RAG prompt
     rag_prompt = f"""
     You are a helpful assistant specialized in analyzing liquor sales data. Answer the following question based on the data execution results provided.
-    
+    Please answer the following question **in the Thai language**.
     **User Question:** {question}
     
     **Data Execution Results:** 
