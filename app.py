@@ -28,7 +28,7 @@ def configure_genai():
 @st.cache_data
 def load_data():
     # Load the transactions data
-    df = pd.read_csv("Sales Master data.csv")
+    df = pd.read_csv("Transaction.csv")
     
     # Convert date column to datetime
     df['date'] = pd.to_datetime(df['date'])
